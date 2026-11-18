@@ -1,0 +1,40 @@
+name: Build Windows VST3
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+
+      - name: Build plugin
+        run: cargo build --locked --release -p chimera-plugin
+
+      - name: Bundle VST3
+        run: python tools/plugin/bundle.py dist
+
+      - name: Add installer and licences
+        shell: pwsh
+        run: |
+          Copy-Item 'tools/plugin/install-windows.ps1' dist/
+          Copy-Item 'tools/plugin/Install Chimera Lab.bat' dist/
+          Copy-Item -Recurse crates/chimera-plugin/licenses dist/licenses
+          Copy-Item LICENSE dist/LICENSE-CHIMERA-MIT.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimera-lab-0.4-windows-x64
+          path: dist/
+
+      - name: Plugin tests (incl. Classic sample-for-sample fixture)
+        run: cargo test --locked --release -p chimera-plugin
