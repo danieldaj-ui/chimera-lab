@@ -54,6 +54,12 @@ impl Snapshot {
     }
 }
 pub fn folder() -> PathBuf {
+    // Windows: %APPDATA%\Chimera Lab\Presets (HOME is usually unset there).
+    if cfg!(windows) {
+        if let Some(appdata) = std::env::var_os("APPDATA") {
+            return PathBuf::from(appdata).join("Chimera Lab").join("Presets");
+        }
+    }
     std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir)
